@@ -7,7 +7,8 @@ from app.ports import InMemoryUserRepository
 
 
 @pytest.fixture
-def client():
+def client(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("JWT_SECRET_KEY", "a" * 64)
     app = FastAPI()
     app.include_router(router)
 

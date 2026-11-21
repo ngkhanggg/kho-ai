@@ -47,3 +47,20 @@ class RegisterResponse(BaseModel):
     created_at: datetime
     message: str = "Account registering successful"
 
+
+class LoginRequest(BaseModel):
+    email: EmailStr = Field(..., min_length=4, max_length=20)
+    password: str = Field(..., min_length=8, max_length=100)
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, v: str) -> str:
+        return v.strip().lower()
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    message: str = "Login successful"
+

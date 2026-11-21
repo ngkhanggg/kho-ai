@@ -17,6 +17,7 @@ services:
     build: ./backend
     environment:
       DATABASE_URL: postgresql+psycopg://khoai:${POSTGRES_PASSWORD}@db:5432/khoai
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env}
     depends_on:
       db:
         condition: service_healthy
