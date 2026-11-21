@@ -42,3 +42,29 @@ KhoAI is a management and demand planning application designed for small and med
 ![Postgres](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 ![AWS](https://custom-icon-badges.demolab.com/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=aws&logoColor=white)
+
+## Run locally
+
+Install Docker with Compose, then run from the repository root:
+
+```sh
+cp .env.example .env
+docker compose up --build
+```
+
+- Frontend: <http://localhost:5173>
+- API docs: <http://localhost:8000/docs>
+- API health: <http://localhost:5173/api/health> (through the Vite proxy)
+
+Compose starts PostgreSQL, applies the Alembic migration, and then starts the API.
+Run `docker compose down` to stop the stack while keeping local database data.
+If ports are busy, set `FRONTEND_PORT` or `BACKEND_PORT` in `.env`.
+
+`frontend/` is the React, TypeScript, Vite and Tailwind application.
+`backend/app/` holds the FastAPI entry point and SQLAlchemy models.
+`backend/migrations/` holds the PostgreSQL schema migrations.
+
+The initial schema allows one Owner account per shop and enforces case-insensitive
+email uniqueness. Signup should create the shop and its Owner in one transaction
+and trim the email before saving it. Authentication and sessions are separate
+implementation tasks. The Compose setup is for local development.
