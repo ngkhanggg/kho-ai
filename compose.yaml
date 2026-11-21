@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_DB: khoai
+      POSTGRES_USER: khoai
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env for local development}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "khoai", "-d", "khoai"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://khoai:${POSTGRES_PASSWORD}@db:5432/khoai
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["sh", "-c", "alembic upgrade head && exec python -m uvicorn app.main:app --host 0.0.0.0"]
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
+
+  frontend:
+    build: ./frontend
+    environment:
+      API_PROXY_TARGET: http://backend:8000
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-5173}:5173"
+
+volumes:
+  postgres_data:
