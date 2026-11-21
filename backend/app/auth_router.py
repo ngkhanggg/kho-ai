@@ -2,8 +2,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.ports import InMemoryUserRepository, UserRepositoryProtocol
-from app.schema import RegisterRequest, RegisterResponse
-from app.security import hash_password
+from app.schema import LoginRequest, LoginResponse, RegisterRequest, RegisterResponse
+from app.security import create_access_token, hash_password, verify_password
+
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 _default_repo= InMemoryUserRepository()
@@ -43,4 +44,27 @@ def register(
         full_name=created.full_name,
         email=created.email,
         created_at=created.created_at,
+    )
+
+@router.post("/login", response_model=LoginResponse)
+def login(
+    body: LoginRequest,
+    repo: Annotated[UserRepositoryProtocol, Depends(get_user_repo)],
+) -> LoginResponse:
+    user = repo.get_by_email(body.email)
+
+    if user is None or not verify_password(body.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password.",
+        )
+
+    token, _, expires_in = create_access_token(
+        user_id=str(user.user_id),
+        shop_id=str(user.shop_id),
+        email=user.email,
+    )
+    return LoginResponse(
+        access_token=token,
+        expires_in=expires_in,
     )

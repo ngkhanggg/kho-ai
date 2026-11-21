@@ -45,12 +45,18 @@ KhoAI is a management and demand planning application designed for small and med
 
 ## Run locally
 
-Install Docker with Compose, then run from the repository root:
+Install Docker with Compose. For first-time setup, run these commands from the
+repository root to create `.env`, generate a local JWT signing secret, and
+start the stack.
 
 ```sh
 cp .env.example .env
+printf '\nJWT_SECRET_KEY=%s\n' "$(openssl rand -hex 32)" >> .env
 docker compose up --build
 ```
+
+If you already have a local `.env`, add the JWT secret using the `printf`
+command only if `JWT_SECRET_KEY` is missing. Reuse the same `.env` on later runs.
 
 - Frontend: <http://localhost:5173>
 - API docs: <http://localhost:8000/docs>
