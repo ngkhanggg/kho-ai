@@ -1,5 +1,5 @@
 from datetime import datetime
-from uuid import UUID
+from uuid import UUID,uuid4
 
 from sqlalchemy import DateTime, ForeignKey, Index, Text, UniqueConstraint, func, text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -11,7 +11,7 @@ class Shop(Base):
     __tablename__ = "shops"
 
     shop_id: Mapped[UUID] = mapped_column(
-        primary_key=True, server_default=text("gen_random_uuid()")
+        primary_key=True, default=uuid4, server_default=text("gen_random_uuid()")
     )
     name: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
@@ -23,7 +23,7 @@ class User(Base):
     __tablename__ = "users"
 
     user_id: Mapped[UUID] = mapped_column(
-        primary_key=True, server_default=text("gen_random_uuid()")
+        primary_key=True,default=uuid4, server_default=text("gen_random_uuid()")
     )
     shop_id: Mapped[UUID] = mapped_column(ForeignKey("shops.shop_id"))
     full_name: Mapped[str] = mapped_column(Text)
