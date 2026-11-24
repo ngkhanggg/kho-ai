@@ -74,3 +74,15 @@ The initial schema allows one Owner account per shop and enforces case-insensiti
 email uniqueness. Signup should create the shop and its Owner in one transaction
 and trim the email before saving it. Authentication and sessions are separate
 implementation tasks. The Compose setup is for local development.
+
+### Auth sessions
+
+Send `Authorization: Bearer <access_token>` with `GET /api/v1/auth/session` to
+check the current session and retrieve its user, shop, email, and expiry.
+`POST /api/v1/auth/logout` uses the same header and returns `204` after revoking
+that token. The frontend can then clear its local auth state. Other sessions for
+the same account remain active. A missing, invalid, or expired token returns
+`401`, as does using a revoked token to check a session.
+
+Session revocations are stored in PostgreSQL through the Compose migrations.
+Use `require_active_session` for new protected routes so they honor logout.
