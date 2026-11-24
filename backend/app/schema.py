@@ -64,3 +64,10 @@ class LoginResponse(BaseModel):
     expires_in: int
     message: str = "Login successful"
 
+
+class SessionResponse(BaseModel):
+    user_id: uuid.UUID
+    shop_id: uuid.UUID
+    email: str
+    expires_at: datetime
+
