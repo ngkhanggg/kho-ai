@@ -1,20 +1,24 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
+import App from './App'
 
-function App() {
-  return (
-    <main className="grid min-h-screen place-items-center bg-slate-950 px-6 text-slate-50">
-      <div className="text-center">
-        <h1 className="text-5xl font-semibold tracking-tight">KhoAI</h1>
-        <p className="mt-4 text-slate-300">Inventory management and demand planning</p>
-      </div>
-    </main>
-  )
-}
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import AuthLayout from './features/auth/AuthLayout'
+import SignInPage from './features/auth/SignInPage'
+import SignUpPage from './features/auth/SignUpPage'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <BrowserRouter>
+      <Routes>
+        <Route index element={<App />} />
+
+        <Route element={<AuthLayout />}>
+          <Route path="login" element={<SignInPage/>} />
+          <Route path="register" element={<SignUpPage/>} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   </StrictMode>,
 )
