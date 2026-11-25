@@ -18,13 +18,13 @@ def client(monkeypatch: pytest.MonkeyPatch):
     return TestClient(app)
 
 
-def test_register_success(client: TestClient):
+def test_register_accepts_eight_character_password_without_composition_rules(client: TestClient):
     payload = {
         "full_name": "  Nguyen Van A  ",
         "shop_name": "  KhoAI Store 1  ",
         "email": "User@KhoAI.vn ",
-        "password": "Password123",
-        "confirm_password": "Password123",
+        "password": "abcdefgh",
+        "confirm_password": "abcdefgh",
     }
     res = client.post("/api/v1/auth/register", json=payload)
     assert res.status_code == 201
@@ -65,15 +65,30 @@ def test_register_password_mismatch_fails(client: TestClient):
     assert res.status_code == 422
 
 
-def test_register_weak_password_and_blank_fields_fail(client: TestClient):
+def test_register_rejects_password_shorter_than_eight_characters(client: TestClient):
+    res = client.post(
+        "/api/v1/auth/register",
+        json={
+            "full_name": "Nguyen Van A",
+            "shop_name": "KhoAI Store 1",
+            "email": "user@khoai.vn",
+            "password": "Abcdef1",
+            "confirm_password": "Abcdef1",
+        },
+    )
+    assert res.status_code == 422
+    assert res.json()["detail"][0]["loc"] == ["body", "password"]
+
+
+def test_register_rejects_blank_fields_and_invalid_email(client: TestClient):
     res = client.post(
         "/api/v1/auth/register",
         json={
             "full_name": "   ",
             "shop_name": "   ",
             "email": "not-an-email",
-            "password": "weak",
-            "confirm_password": "weak",
+            "password": "Password123",
+            "confirm_password": "Password123",
         },
     )
     assert res.status_code == 422
