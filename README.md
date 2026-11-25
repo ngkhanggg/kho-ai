@@ -77,12 +77,23 @@ implementation tasks. The Compose setup is for local development.
 
 ### Auth sessions
 
-Send `Authorization: Bearer <access_token>` with `GET /api/v1/auth/session` to
-check the current session and retrieve its user, shop, email, and expiry.
-`POST /api/v1/auth/logout` uses the same header and returns `204` after revoking
-that token. The frontend can then clear its local auth state. Other sessions for
-the same account remain active. A missing, invalid, or expired token returns
-`401`, as does using a revoked token to check a session.
+Call auth endpoints through the same origin as the frontend using relative `/api`
+URLs. Vite proxies these requests to FastAPI during local development.
+
+- `POST /api/v1/auth/login` sets a 30-minute `HttpOnly` session cookie and returns
+  `expires_in` and `message`. The browser stores and sends the cookie automatically.
+- On page load or reload, call `GET /api/v1/auth/session`. Use the returned user,
+  shop, email, and expiry on `200`, or show sign-in on `401`. Checking the session
+  does not extend its lifetime.
+- `POST /api/v1/auth/logout` returns `204`, revokes the current token in PostgreSQL,
+  and removes the session cookie. Other sessions for the same account stay active.
+
+Login and cookie-authenticated writes require a matching `Origin` header for CSRF
+protection. The browser sends it on these POST requests. Use HTTPS outside local
+development. A reverse proxy should preserve the public host and forward the
+public scheme to FastAPI through a trusted proxy configuration.
+
+Previously issued Bearer tokens remain usable until expiry or revocation.
 
 Session revocations are stored in PostgreSQL through the Compose migrations.
 Use `require_active_session` for new protected routes so they honor logout.

@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import Engine
 
 from app.ports import InMemoryUserRepository, UserRepositoryProtocol
@@ -15,11 +15,15 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.repository import PostgreUserRepository
 from app.sessions import (
+    SESSION_COOKIE_NAME,
+    SESSION_COOKIE_PATH,
     AccessSession,
     get_session_engine,
     get_signed_session,
     require_active_session,
+    require_same_origin,
     revoke_session,
+    use_secure_cookie,
 )
 
 
@@ -63,10 +67,12 @@ def register(
         created_at=created.created_at,
     )
 
-@router.post("/login", response_model=LoginResponse)
+@router.post("/login", response_model=LoginResponse, dependencies=[Depends(require_same_origin)])
 def login(
     body: LoginRequest,
     repo: Annotated[UserRepositoryProtocol, Depends(get_user_repo)],
+    request: Request,
+    response: Response,
 ) -> LoginResponse:
     user = repo.get_by_email(body.email)
 
@@ -81,10 +87,17 @@ def login(
         shop_id=str(user.shop_id),
         email=user.email,
     )
-    return LoginResponse(
-        access_token=token,
-        expires_in=expires_in,
+    response.headers["Cache-Control"] = "no-store"
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=token,
+        max_age=expires_in,
+        path=SESSION_COOKIE_PATH,
+        secure=use_secure_cookie(request),
+        httponly=True,
+        samesite="lax",
     )
+    return LoginResponse(expires_in=expires_in)
 
 
 @router.get("/session", response_model=SessionResponse)
@@ -105,6 +118,15 @@ def read_session(
 def logout(
     session: Annotated[AccessSession, Depends(get_signed_session)],
     engine: Annotated[Engine, Depends(get_session_engine)],
+    request: Request,
 ) -> Response:
     revoke_session(engine, session)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    response.delete_cookie(
+        key=SESSION_COOKIE_NAME,
+        path=SESSION_COOKIE_PATH,
+        secure=use_secure_cookie(request),
+        httponly=True,
+        samesite="lax",
+    )
+    return response

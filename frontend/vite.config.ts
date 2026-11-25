@@ -6,7 +6,11 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      '/api': process.env.API_PROXY_TARGET ?? 'http://127.0.0.1:8000',
+      '/api': {
+        target: process.env.API_PROXY_TARGET ?? 'http://127.0.0.1:8000',
+        // Keep the browser-facing host for FastAPI's same-origin check.
+        changeOrigin: false,
+      },
     },
   },
 })
