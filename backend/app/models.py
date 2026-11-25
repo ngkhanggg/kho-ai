@@ -38,3 +38,10 @@ class User(Base):
         UniqueConstraint("shop_id", name="users_one_account_per_shop"),
         Index("users_email_lower_uidx", func.lower(email), unique=True),
     )
+
+
+class RevokedAccessToken(Base):
+    __tablename__ = "revoked_access_tokens"
+
+    jti: Mapped[UUID] = mapped_column(primary_key=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)

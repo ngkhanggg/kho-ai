@@ -1,12 +1,27 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy import Engine
 
 from app.ports import InMemoryUserRepository, UserRepositoryProtocol
-from app.schema import LoginRequest, LoginResponse, RegisterRequest, RegisterResponse
+from app.schema import (
+    LoginRequest,
+    LoginResponse,
+    RegisterRequest,
+    RegisterResponse,
+    SessionResponse,
+)
 from app.security import create_access_token, hash_password, verify_password
 from sqlalchemy.orm import Session
 from app.db import get_db
 from app.repository import PostgreUserRepository
+from app.sessions import (
+    AccessSession,
+    get_session_engine,
+    get_signed_session,
+    require_active_session,
+    revoke_session,
+)
+
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 _default_repo= InMemoryUserRepository()
@@ -70,3 +85,26 @@ def login(
         access_token=token,
         expires_in=expires_in,
     )
+
+
+@router.get("/session", response_model=SessionResponse)
+def read_session(
+    session: Annotated[AccessSession, Depends(require_active_session)],
+    response: Response,
+) -> SessionResponse:
+    response.headers["Cache-Control"] = "no-store"
+    return SessionResponse(
+        user_id=session.sub,
+        shop_id=session.shop_id,
+        email=session.email,
+        expires_at=session.exp,
+    )
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(
+    session: Annotated[AccessSession, Depends(get_signed_session)],
+    engine: Annotated[Engine, Depends(get_session_engine)],
+) -> Response:
+    revoke_session(engine, session)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
