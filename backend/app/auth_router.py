@@ -11,6 +11,9 @@ from app.schema import (
     SessionResponse,
 )
 from app.security import create_access_token, hash_password, verify_password
+from sqlalchemy.orm import Session
+from app.db import get_db
+from app.repository import PostgreUserRepository
 from app.sessions import (
     AccessSession,
     get_session_engine,
@@ -23,8 +26,8 @@ from app.sessions import (
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 _default_repo= InMemoryUserRepository()
 
-def get_user_repo() -> UserRepositoryProtocol:
-    return _default_repo
+def get_user_repo(db: Annotated[Session, Depends(get_db)]) -> UserRepositoryProtocol:
+    return PostgreUserRepository(db)
 
 @router.post(
     "/register",
