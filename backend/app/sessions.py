@@ -3,8 +3,8 @@ from functools import lru_cache
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import APIKeyCookie, HTTPAuthorizationCredentials, HTTPBearer
 from jwt import InvalidTokenError
 from pydantic import AwareDatetime, BaseModel, ValidationError
 from sqlalchemy import Engine, delete, select
@@ -23,7 +23,29 @@ class AccessSession(BaseModel):
     exp: AwareDatetime
 
 
+SESSION_COOKIE_NAME = "khoai_session"
+SESSION_COOKIE_PATH = "/api"
+SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
+
+cookie_scheme = APIKeyCookie(name=SESSION_COOKIE_NAME, auto_error=False)
 bearer_scheme = HTTPBearer(auto_error=False)
+
+
+def require_same_origin(request: Request) -> None:
+    expected_origin = f"{request.url.scheme}://{request.url.netloc}"
+    if request.headers.get("origin") != expected_origin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="A same-origin request is required.",
+        )
+
+
+def use_secure_cookie(request: Request) -> bool:
+    local_http = (
+        request.url.scheme == "http"
+        and request.url.hostname in {"localhost", "127.0.0.1", "::1"}
+    )
+    return not local_http
 
 
 def invalid_session() -> HTTPException:
@@ -35,12 +57,20 @@ def invalid_session() -> HTTPException:
 
 
 def get_signed_session(
+    request: Request,
+    cookie: Annotated[str | None, Depends(cookie_scheme)],
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
 ) -> AccessSession:
-    if credentials is None:
+    if cookie is not None:
+        if request.method not in SAFE_METHODS:
+            require_same_origin(request)
+        token = cookie
+    elif credentials is not None:
+        token = credentials.credentials
+    else:
         raise invalid_session()
     try:
-        return AccessSession.model_validate(decode_access_token(credentials.credentials))
+        return AccessSession.model_validate(decode_access_token(token))
     except (InvalidTokenError, ValidationError) as exc:
         raise invalid_session() from exc
 

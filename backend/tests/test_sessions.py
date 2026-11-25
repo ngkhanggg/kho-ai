@@ -14,6 +14,9 @@ from app.security import JWT_ALGORITHM
 from app.sessions import get_session_engine
 
 
+ORIGIN = "http://localhost:5173"
+
+
 @pytest.fixture
 def session_app(tmp_path, monkeypatch):
     monkeypatch.setenv("JWT_SECRET_KEY", "a" * 64)
@@ -26,7 +29,7 @@ def session_app(tmp_path, monkeypatch):
         app.include_router(router)
         app.dependency_overrides[get_session_engine] = lambda: engine
         app.dependency_overrides[get_user_repo] = lambda: repo
-        return TestClient(app)
+        return TestClient(app, base_url=ORIGIN)
 
     yield make_client
     engine.dispose()
@@ -38,7 +41,8 @@ def bearer(token):
 
 def test_logout_revokes_only_the_selected_session(session_app):
     credentials = {"email": "user@khoai.vn", "password": "Password123"}
-    with session_app() as client:
+    origin_headers = {"Origin": ORIGIN}
+    with session_app() as client, session_app() as other_client:
         registration = client.post(
             "/api/v1/auth/register",
             json={
@@ -50,26 +54,37 @@ def test_logout_revokes_only_the_selected_session(session_app):
         )
         assert registration.status_code == 201
         user = registration.json()
-        login = client.post("/api/v1/auth/login", json=credentials)
-        other_login = client.post("/api/v1/auth/login", json=credentials)
+        login = client.post("/api/v1/auth/login", headers=origin_headers, json=credentials)
+        other_login = other_client.post(
+            "/api/v1/auth/login", headers=origin_headers, json=credentials
+        )
         assert login.status_code == other_login.status_code == 200
-        headers = bearer(login.json()["access_token"])
-        other_headers = bearer(other_login.json()["access_token"])
-        session = client.get("/api/v1/auth/session", headers=headers)
+        assert "secure" not in login.headers["Set-Cookie"].lower()
+        token = login.cookies["khoai_session"]
+        other_token = other_login.cookies["khoai_session"]
+        session = client.get("/api/v1/auth/session")
         assert session.status_code == 200
         assert session.headers["Cache-Control"] == "no-store"
         for field in ("user_id", "shop_id", "email"):
             assert session.json()[field] == user[field]
-        logout = client.post("/api/v1/auth/logout", headers=headers)
+        for headers in ({}, {"Origin": "http://localhost:5174"}):
+            assert client.post("/api/v1/auth/logout", headers=headers).status_code == 403
+        assert client.get("/api/v1/auth/session").status_code == 200
+
+        logout = client.post("/api/v1/auth/logout", headers=origin_headers)
         assert logout.status_code == 204
         assert logout.content == b""
+        assert "Max-Age=0" in logout.headers["Set-Cookie"]
+        assert "khoai_session" not in client.cookies
+        assert client.get("/api/v1/auth/session").status_code == 401
+        assert other_client.get("/api/v1/auth/session").status_code == 200
 
     with session_app() as client:
-        session = client.get("/api/v1/auth/session", headers=headers)
+        session = client.get("/api/v1/auth/session", headers=bearer(token))
         assert session.status_code == 401
         assert session.headers["WWW-Authenticate"] == "Bearer"
-        assert client.post("/api/v1/auth/logout", headers=headers).status_code == 204
-        assert client.get("/api/v1/auth/session", headers=other_headers).status_code == 200
+        assert client.post("/api/v1/auth/logout", headers=bearer(token)).status_code == 204
+        assert client.get("/api/v1/auth/session", headers=bearer(other_token)).status_code == 200
 
 
 @pytest.mark.parametrize("case", ["missing", "bad-signature", "expired", "missing-claim"])
