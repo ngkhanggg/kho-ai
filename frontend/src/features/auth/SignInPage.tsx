@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function SignInPage() {
     const [showPassword, setShowPassword] = useState(false);
@@ -68,7 +69,7 @@ export default function SignInPage() {
                             </div>
 
                             <button style={buttonStyles} className="self-center">Sign up</button>
-                            <div className="text-center">Already have an account? Sign in <span style={{color: "var(--color-primary)"}}>here.</span></div>
+                            <div className="text-center">Don't have an account? Sign up <Link to="/signup" style={{color: "var(--color-primary)"}}>here.</Link></div>
                         </form>
                     </div>
                 </div>
