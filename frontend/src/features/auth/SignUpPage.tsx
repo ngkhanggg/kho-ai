@@ -84,13 +84,13 @@ export default function SignUnPage() {
                                     aria-label={showPassword ? "Hide password" : "Show password"}
                                     className="absolute right-4 top-1/2 -translate-y-1/2"
                                 >
-                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
                                 </button>
                             </div>
                         </div>
 
                         <div className="flex flex-col gap-1">
-                                <label htmlFor="form-password" className="font-bold text-lg">Password</label>                                <div className="relative">
+                                <label htmlFor="form-password" className="font-bold text-lg">Confirm Password</label>                                <div className="relative">
                                 <input 
                                     id="form-password"
                                     type={showCPassword ? "text" : "password"}
@@ -104,7 +104,7 @@ export default function SignUnPage() {
                                     aria-label={showCPassword ? "Hide password" : "Show password"}
                                     className="absolute right-4 top-1/2 -translate-y-1/2"
                                 >
-                                    {showCPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    {showCPassword ? <Eye size={20} /> : <EyeOff size={20} />}
                                 </button>
                             </div>
                         </div>

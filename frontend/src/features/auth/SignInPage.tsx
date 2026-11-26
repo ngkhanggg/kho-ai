@@ -63,7 +63,7 @@ export default function SignInPage() {
                                         aria-label={showPassword ? "Hide password" : "Show password"}
                                         className="absolute right-4 top-1/2 -translate-y-1/2"
                                     >
-                                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                        {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
                                     </button>
                                 </div>
                             </div>
