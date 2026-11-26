@@ -1,4 +1,10 @@
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
+
 export default function SignUnPage() {
+    const [showPassword, setShowPassword] = useState(false);
+    const [showCPassword, setShowCPassword] = useState(false);
+    
     const inputStyles = {
         backgroundColor: "var(--color-surface-container-highest)",
         width: "100%",
@@ -63,26 +69,43 @@ export default function SignUnPage() {
 
                         {/* Password */}
                         <div className="flex flex-col gap-1">
-                            <label htmlFor="password" className="font-bold text-lg">Password</label>
-                            <div>Password must be at least <span style={{ color:"var(--color-safe)" }}>8 characters.</span> </div>
-                            <input 
-                                id="form-password"
-                                type="password"
-                                className=""
-                                value="Sigma123@"
-                                style={inputStyles}
-                            />
+                                <label htmlFor="form-password" className="font-bold text-lg">Password</label>                                <div className="relative">
+                                <input 
+                                    id="form-password"
+                                    type={showPassword ? "text" : "password"}
+                                    className="cursor-pointer "
+                                    defaultValue="Sigma123@"
+                                    style={{ ...inputStyles, paddingRight: "3.5rem" }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword((prev) => !prev)}
+                                    aria-label={showPassword ? "Hide password" : "Show password"}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2"
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
                         </div>
 
                         <div className="flex flex-col gap-1">
-                            <label htmlFor="cPassword" className="font-bold text-lg">Confirm Password</label>
-                            <input 
-                                id="form-cPassword"
-                                type="password"
-                                placeholder="demo_cPassword"
-                                className=""
-                                style={inputStyles}
-                            />
+                                <label htmlFor="form-password" className="font-bold text-lg">Password</label>                                <div className="relative">
+                                <input 
+                                    id="form-password"
+                                    type={showCPassword ? "text" : "password"}
+                                    className="cursor-pointer "
+                                    placeholder="Password"
+                                    style={{ ...inputStyles, paddingRight: "3.5rem" }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCPassword((prev) => !prev)}
+                                    aria-label={showCPassword ? "Hide password" : "Show password"}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2"
+                                >
+                                    {showCPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
                         </div>
 
                         <button style={buttonStyles} className="self-center">Sign up</button>
