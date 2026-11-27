@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Protocol
 from pydantic import BaseModel
-
+from typing import Literal
 class UserRecord(BaseModel):
     user_id: uuid.UUID
     shop_id: uuid.UUID
@@ -42,3 +42,62 @@ class InMemoryUserRepository:
         )
         self._users_by_email[normalized] = record
         return record
+class InventoryRecord(BaseModel):
+        product_id: uuid.UUID
+        shop_id: uuid.UUID
+        stock_quantity: int
+        updated_at: datetime
+    
+class InventoryAdjustmentRecord(BaseModel):
+    adjustment_id:uuid.UUID
+    product_id: uuid.UUID
+    shop_id: uuid.UUID
+    user_id: uuid.UUID
+    adjustment_type: Literal["increase", "decrease", "set"]
+    previous_quantity: int
+    quantity_change: int
+    new_quantity: int
+    reason: str
+    created_at: datetime
+
+class InventoryRepositoryProtocol(Protocol):
+    def list_by_shop(self, shop_id: uuid.UUID) -> list[InventoryRecord]: ...
+    def get_by_product(self,shop_id:uuid.UUID,  product_id: uuid.UUID) -> InventoryRecord | None: ...
+    def adjust_stock(
+            self,
+            shop_id: uuid.UUID,
+            product_id: uuid.UUID,
+            user_id: uuid.UUID,
+            adjustment_type: Literal["increase", "decrease","set"],
+            quantity: int,
+            reason: str
+    ) -> InventoryAdjustmentRecord: ...
+    def list_adjustments(
+        self, shop_id: uuid.UUID, product_id: uuid.UUID
+    ) -> list[InventoryAdjustmentRecord] | None: ...
+
+class InMemoryInventoryRepository:
+    def __init__(self) -> None:
+        self._items: dict[tuple[uuid.UUID, uuid.UUID],InventoryRecord] = {}
+        self._adjustments: dict[tuple[uuid.UUID, uuid.UUID], list[InventoryAdjustmentRecord]] = {}
+
+    def seed_product(self, shop_id: uuid.UUID, product_id: uuid.UUID, stock_quantity: int=0) -> InventoryRecord:
+        if stock_quantity < 0:
+            raise ValueError("Stock quantity cannot be negative")
+        now = datetime.now(timezone.utc)
+        record = InventoryRecord(
+            product_id=product_id,
+            shop_id=shop_id,
+            stock_quantity=stock_quantity,
+            updated_at=now
+        )
+        self._items[(shop_id, product_id)] = record
+        self._adjustments.setdefault((shop_id,product_id), [])
+        return record
+    def list_by_shop(self,shop_id: uuid.UUID) -> list[InventoryRecord]:
+        return[
+            item for (item_shop_id, _), item in self._items.items()
+            if item_shop_id == shop_id
+        ]
+    def get_by_product(self,shop_id:uuid.UUID, product_id:uuid.UUID) -> InventoryRecord | None:
+        return self._items.get((shop_id, product_id))

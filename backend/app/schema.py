@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
-
+from typing import Literal
 class RegisterRequest(BaseModel):
     full_name: str = Field(..., min_length=4, max_length=100)
     email: EmailStr = Field(..., min_length=4, max_length=20)
@@ -60,3 +60,38 @@ class SessionResponse(BaseModel):
     email: str
     expires_at: datetime
 
+class StockAdjustmentRequest(BaseModel):
+    adjustment_type: Literal["increase","decrease","set"]
+    quantity: int = Field(..., ge=0)
+    reason: str = Field(...,min_length=1,max_length=255)
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason_not_blank(cls, v:str) -> str:
+            cleaned=v.strip()
+            if not cleaned:
+                raise ValueError("Field cannot be blank")
+            return cleaned
+    @model_validator(mode="after")
+    def validate_positve(self) -> "StockAdjustmentRequest":
+        if self.adjustment in ("increase","decrease") and self.quantity <= 0:
+            raise ValueError("Quantity must be greater than 0 for increase or decrease")
+        return self
+
+class InventoryItemResponse(BaseModel):
+    product_id: uuid.UUID
+    shop_id: uuid.UUID
+    stock_quantity: int
+    updated_at: datetime
+
+class InventoryAdjustmentRequest(BaseModel):
+    adjustment_id:uuid.UUID
+    product_id: uuid.UUID
+    shop_id: uuid.UUID
+user_id: uuid.UUID
+adjustment_type: Literal["increase", "decrease", "set"]
+previous_quantity: int
+quantity_change: int
+new_quantity: int
+reason: str
+created_at: datetime
