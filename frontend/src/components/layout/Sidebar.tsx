@@ -17,11 +17,13 @@ export default function Sidebar() {
         navigate('/signin')
     }
 
+    // If not logged in, not allow access to dashboard
     useEffect(() => {
         getSession()
             .then(setSessionInfo)
             .catch(() => {
                 clearToken();
+                alert("you are not logged in")
                 navigate("/signin");
             });
     }, [navigate]);
