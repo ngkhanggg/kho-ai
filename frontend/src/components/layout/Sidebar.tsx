@@ -2,14 +2,29 @@ import { LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import SidebarLink from "./SidebarLink";
 import { bottomNav, mainNav } from "./navItems";
+import { clearToken, getSession, logout } from "../../features/auth/authApi";
+import { useEffect, useState } from "react";
+import { SessionResponse } from "../../features/auth/types";
 
 export default function Sidebar() {
     const navigate = useNavigate();
+    const [sessionInfo, setSessionInfo] = useState<SessionResponse | null>(null);
 
     function handleLogOut() {
         // TODO: call POST /api/v1/auth/logout and delete the saved token
-        navigate('/sign-in')
+        logout();
+        alert("logging out")
+        navigate('/signin')
     }
+
+    useEffect(() => {
+        getSession()
+            .then(setSessionInfo)
+            .catch(() => {
+                clearToken();
+                navigate("/signin");
+            });
+    }, [navigate]);
 
     return (
         <aside className="sticky top-0 flex h-screen w-58 shrink-0 flex-col bg-surface-dim px-4 pb-6">
@@ -18,7 +33,10 @@ export default function Sidebar() {
                 {/* Placeholder logo */}
                 <div className="size-10 bg-on-surface"></div> 
 
-                <span className="text-lg font-bold text-primary">KhoAI</span>
+                <div className="flex flex-col ">
+                    <span className="text-lg font-bold text-primary">KhoAI</span>
+                    <span className="text-xs ">{sessionInfo?.email}</span>
+                </div>
 
             </div>
 
